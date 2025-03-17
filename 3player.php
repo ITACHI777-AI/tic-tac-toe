@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Three Player Tic-Tac-Toe</title>
+    <style>
+        .video-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: -1;
+        }
+        body {
+            text-align: center;
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            position: relative;
+        }
+        .knight {
+            position: absolute;
+            width: 100px;
+        }
+        .left-knight {
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        .right-knight {
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        .board {
+            display: grid;
+            grid-template-columns: repeat(5, 100px);
+            grid-template-rows: repeat(5, 100px);
+            gap: 5px;
+            justify-content: center;
+            align-items: center;
+            margin: 20px auto;
+            width: max-content;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+        .cell {
+            width: 100px;
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2em;
+            background-color: #f0f0f0;
+            cursor: pointer;
+            border: 1px solid #000;
+        }
+        .cell.taken {
+            cursor: not-allowed;
+            background-color: #dcdcdc;
+        }
+        #status {
+            margin-top: 20px;
+            font-size: 1.5em;
+            font-weight: bold;
+            padding: 10px;
+            border-radius: 10px;
+        }
+        .player-x { color: red; }
+        .player-o { color: blue; }
+        .player-z { color: green; }
+        button {
+            margin-top: 15px;
+            padding: 10px 20px;
+            font-size: 1em;
+            cursor: pointer;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .attack {
+            animation: attackAnimation 1s forwards;
+        }
+        h1 {
+            font-size: 2.5em;
+            padding: 10px 20px;
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+        }
+        @keyframes attackAnimation {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2) rotate(10deg); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <h1>Three Player Tic-Tac-Toe</h1>
+    <img src="k1.webp" class="knight left-knight" id="knightX">
+    <img src="k2.webp" class="knight right-knight" id="knightO">
+    <img src="k3.webp" class="knight right-knight" id="knightZ">
+    <div class="board" id="board"></div>
+    <div id="status">Player X's Turn!</div>
+    <button onclick="resetGame()">Restart Game</button>
+    <audio id="swordSound">
+        <source src="sword.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="bgMusic" autoplay loop>
+        <source src="climax.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="winSound">
+        <source src="win.mp3" type="audio/mpeg">
+    </audio>
+    <video autoplay muted loop class="video-bg">
+        <source src="lv.mp4" type="video/mp4">
+        Your browser does not support the video tag.
+    </video>
+    <script>
+        const board = document.getElementById("board");
+        const status = document.getElementById("status");
+        const bgMusic = document.getElementById("bgMusic");
+        const winSound = document.getElementById("winSound");
+        let cells = [];
+        let boardState = Array(25).fill("");
+        let gameOver = false;
+        let players = ["X", "O", "Z"];
+        let currentPlayerIndex = 0;
+        function updateStatusText() {
+            let currentPlayer = players[currentPlayerIndex];
+            status.innerText = `Player ${currentPlayer}'s Turn!`;
+            status.className = currentPlayer === "X" ? "player-x" 
+                            : currentPlayer === "O" ? "player-o" 
+                            : "player-z";
+        }
+        function createBoard() {
+            board.innerHTML = "";
+            boardState = Array(25).fill("");
+            gameOver = false;
+            currentPlayerIndex = 0;
+            updateStatusText();
+            cells = [];
+            for (let i = 0; i < 25; i++) {
+                let cell = document.createElement("div");
+                cell.classList.add("cell");
+                cell.dataset.index = i;
+                cell.addEventListener("click", playerMove);
+                board.appendChild(cell);
+                cells.push(cell);
+            }
+            bgMusic.currentTime = 0;
+            bgMusic.play();
+        }
+        function playerMove(event) {
+            if (gameOver) return;
+            let index = event.target.dataset.index;
+            if (boardState[index] !== "") return;
+            let currentPlayer = players[currentPlayerIndex];
+            boardState[index] = currentPlayer;
+            cells[index].innerText = currentPlayer;
+            cells[index].classList.add("taken");
+            if (checkWinner(currentPlayer)) return;
+            currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
+            updateStatusText();
+        }
+        function checkWinner(player) {
+            const winningCombos = [];
+            for (let i = 0; i < 5; i++) {
+                winningCombos.push([i * 5, i * 5 + 1, i * 5 + 2, i * 5 + 3, i * 5 + 4]);
+                winningCombos.push([i, i + 5, i + 10, i + 15, i + 20]);
+            }
+            winningCombos.push([0, 6, 12, 18, 24]);
+            winningCombos.push([4, 8, 12, 16, 20]);
+            for (let combo of winningCombos) {
+                if (combo.every(index => boardState[index] === player)) {
+                    gameOver = true;
+                    status.innerText = `Player ${player} Wins! 🎉`;
+                    playWinSound(player);
+                    return true;
+                }
+            }
+            return false;
+        }
+        function playWinSound(winner) {
+            bgMusic.pause();
+            winSound.play();
+            document.getElementById("swordSound").play();
+        }
+        function resetGame() {
+            createBoard();
+        }
+        createBoard();
+    </script>
+</body>
+</html>
